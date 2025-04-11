@@ -278,9 +278,32 @@
         retirementDate: null
       };
 
-      const batches = JSON.parse(localStorage.getItem("batches") || "[]");
-      batches.push(batch);
-      localStorage.setItem("batches", JSON.stringify(batches));
+      fetch("https://mushtrack-backend.onrender.com/api/create-batch/", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    username: "mushmaster", // 🔐 Replace this later with real logged-in user
+    batchLabel,
+    variety,
+    inoculationDate: date,
+    numBags,
+    contaminatedBags: 0,
+    notes
+  })
+})
+.then(res => res.json())
+.then(data => {
+  console.log("✅ Batch saved in backend!", data);
+  alert("✅ Batch created and stored in cloud!");
+  switchSection('incubation');
+})
+.catch(err => {
+  console.error("❌ Error saving batch:", err);
+  alert("Something went wrong saving batch to backend.");
+});
+
 
       alert("✅ Batch created and moved to Incubation Room!");
       switchSection('incubation');
