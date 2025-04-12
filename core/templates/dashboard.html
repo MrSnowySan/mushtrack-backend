@@ -251,63 +251,46 @@
     }
 
     function createBatch() {
-      const variety = document.getElementById('variety').value;
-      const date = document.getElementById('batchDate').value;
-      const numBags = parseInt(document.getElementById('numBags').value);
-      const notes = document.getElementById('notes').value;
-      const batchLabel = document.getElementById('batchLabel').value;
+  const variety = document.getElementById('variety').value;
+  const date = document.getElementById('batchDate').value;
+  const numBags = parseInt(document.getElementById('numBags').value);
+  const notes = document.getElementById('notes').value;
+  const batchLabel = document.getElementById('batchLabel').value;
 
-      if (!variety || !date || !numBags) {
-        alert("Please complete all required fields.");
-        return;
-      }
+  if (!variety || !date || !numBags) {
+    alert("Please complete all required fields.");
+    return;
+  }
 
-      const batch = {
-        id: Date.now(),
-        batchLabel,
-        variety,
-        inoculationDate: date,
-        numBags,
-        contaminatedBags: 0,
-        blockWeight: 2.5,
-        totalWeight: 0,
-        harvests: [],
-        notes,
-        stage: "incubation",
-        growRoomEntryDate: null,
-        retirementDate: null
-      };
-
-      fetch("https://mushtrack-backend.onrender.com/api/create-batch/", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    username: "mushmaster", // 🔐 Replace this later with real logged-in user
-    batchLabel,
-    variety,
-    inoculationDate: date,
-    numBags,
-    contaminatedBags: 0,
-    notes
+  fetch("https://mushtrack-backend.onrender.com/api/create-batch/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      username: "mushmaster", // 🔐 Replace this later with real logged-in user
+      batchLabel,
+      variety,
+      inoculationDate: date,
+      numBags,
+      contaminatedBags: 0,
+      notes
+    })
   })
-})
-.then(res => res.json())
-.then(data => {
-  console.log("✅ Batch saved in backend!", data);
-  alert("✅ Batch created and stored in cloud!");
-  switchSection('incubation');
-})
-.catch(err => {
-  console.error("❌ Error saving batch:", err);
-  alert("Something went wrong saving batch to backend.");
-});
-
-
-      alert("✅ Batch created and moved to Incubation Room!");
-      switchSection('incubation');
-    }
+  .then(res => {
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    return res.json();
+  })
+  .then(data => {
+    console.log("✅ Batch saved in backend!", data);
+    alert("✅ Batch created and stored in cloud!");
+    switchSection('incubation');
+  })
+  .catch(err => {
+    console.error("❌ Error saving batch:", err);
+    alert("Something went wrong saving batch to backend.");
+  });
+}
 
     function renderIncubationRoom() {
       const list = document.getElementById('incubationList');
