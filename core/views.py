@@ -32,3 +32,26 @@ def create_batch(request):
         return JsonResponse({'status': 'success', 'id': batch.id})
     
     return JsonResponse({'error': 'Invalid method'}, status=400)
+
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def get_batches(request):
+    user = request.user  # logged-in user
+    batches = Batch.objects.filter(user=user)
+
+    data = [{
+        'id': b.id,
+        'batchLabel': b.batch_label,
+        'variety': b.variety,
+        'inoculationDate': str(b.inoculation_date),
+        'numBags': b.num_bags,
+        'contaminatedBags': b.contaminated_bags,
+        'notes': b.notes,
+        'stage': b.stage,
+        'retirementDate': str(b.retirement_date) if b.retirement_date else None,
+        'growRoomEntryDate': str(b.grow_room_entry_date) if b.grow_room_entry_date else None,
+        'harvests': []  # You’ll expand this later when you track harvests
+    } for b in batches]
+
+    return JsonResponse(data, safe=False)
