@@ -1,22 +1,24 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Batch
+from django.contrib.auth.models import User
+import json
 
-@login_required
+# 👇 Render the dashboard without login requirement
 def dashboard(request):
     return render(request, 'dashboard.html')
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
-from .models import Batch
-from django.contrib.auth.models import User
-
+# 👇 Create a batch with hardcoded user (mushmaster)
 @csrf_exempt
 def create_batch(request):
     if request.method == 'POST':
         data = json.loads(request.body)
 
-        user = User.objects.get(username=data.get('username'))  # assume mushmaster for now
+        try:
+            user = User.objects.get(username=data.get('username', 'mushmaster'))
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User does not exist'}, status=404)
 
         batch = Batch.objects.create(
             user=user,
@@ -30,15 +32,13 @@ def create_batch(request):
         )
 
         return JsonResponse({'status': 'success', 'id': batch.id})
-    
+
     return JsonResponse({'error': 'Invalid method'}, status=400)
 
-from django.contrib.auth.decorators import login_required
-
-@login_required
+# 👇 Get ALL batches regardless of user
+@csrf_exempt
 def get_batches(request):
-    user = request.user  # logged-in user
-    batches = Batch.objects.filter(user=user)
+    batches = Batch.objects.all()
 
     data = [{
         'id': b.id,
@@ -51,7 +51,7 @@ def get_batches(request):
         'stage': b.stage,
         'retirementDate': str(b.retirement_date) if b.retirement_date else None,
         'growRoomEntryDate': str(b.grow_room_entry_date) if b.grow_room_entry_date else None,
-        'harvests': []  # You’ll expand this later when you track harvests
+        'harvests': []  # Placeholder for future harvest tracking
     } for b in batches]
 
     return JsonResponse(data, safe=False)

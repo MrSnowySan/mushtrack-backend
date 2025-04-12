@@ -208,17 +208,17 @@
 
   <script>
     function switchSection(sectionId) {
-  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-  document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
-  document.getElementById(sectionId).classList.add('active');
-  document.getElementById('tab-' + sectionId).classList.add('active');
-  if (sectionId === 'incubation') renderIncubationRoom();
-  if (sectionId === 'grow') renderGrowRoom();
-  if (sectionId === 'retired') renderRetirementView();
-  if (sectionId === 'dashboard') renderDashboard();
-    renderGrowRoom();
-}
-
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(sectionId).classList.add('active');
+      document.getElementById('tab-' + sectionId).classList.add('active');
+  
+      if (sectionId === 'incubation') renderIncubationRoom();
+      else if (sectionId === 'grow') renderGrowRoom();
+      else if (sectionId === 'retired') renderRetirementView();
+      else if (sectionId === 'dashboard') renderDashboard();
+    }
+  
     function getAbbreviation(variety) {
       const map = {
         "Oyster - Blue": "BO",
@@ -236,7 +236,7 @@
       };
       return map[variety] || "??";
     }
-
+  
     function updateBatchLabel() {
       const variety = document.getElementById('variety').value;
       const dateStr = document.getElementById('batchDate').value;
@@ -249,89 +249,79 @@
       const label = `${abbrev}${date.getDate()}/${date.getMonth() + 1}/${String(date.getFullYear()).slice(-2)}`;
       document.getElementById('batchLabel').value = label;
     }
-
+  
     function createBatch() {
-  const variety = document.getElementById('variety').value;
-  const date = document.getElementById('batchDate').value;
-  const numBags = parseInt(document.getElementById('numBags').value);
-  const notes = document.getElementById('notes').value;
-  const batchLabel = document.getElementById('batchLabel').value;
+      const variety = document.getElementById('variety').value;
+      const date = document.getElementById('batchDate').value;
+      const numBags = parseInt(document.getElementById('numBags').value);
+      const notes = document.getElementById('notes').value;
+      const batchLabel = document.getElementById('batchLabel').value;
+  
+      if (!variety || !date || !numBags) {
+        alert("Please complete all required fields.");
+        return;
+      }
+  
+      fetch("https://mushtrack-backend.onrender.com/api/create-batch/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: "mushmaster", // 🔐 Replace later with real logged-in user
+          batchLabel,
+          variety,
+          inoculationDate: date,
+          numBags,
+          contaminatedBags: 0,
+          notes
+        })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        console.log("✅ Batch saved in backend!", data);
+        alert("✅ Batch created and stored in cloud!");
+        switchSection('incubation');
+        renderIncubationRoom(); // 👈 Ensure fresh data loads
+      })
+      .catch(err => {
+        console.error("❌ Error saving batch:", err);
+        alert("Something went wrong saving batch to backend.");
+      });
+    }
 
-  if (!variety || !date || !numBags) {
-    alert("Please complete all required fields.");
+    function renderBatches(batches) {
+  const list = document.getElementById('incubationList');
+  list.innerHTML = '';
+
+  const incubationBatches = batches.filter(batch => batch.stage === 'incubation');
+
+  if (incubationBatches.length === 0) {
+    list.innerHTML = '<p>No batches in incubation.</p>';
     return;
   }
 
-  fetch("https://mushtrack-backend.onrender.com/api/create-batch/", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      username: "mushmaster", // 🔐 Replace this later with real logged-in user
-      batchLabel,
-      variety,
-      inoculationDate: date,
-      numBags,
-      contaminatedBags: 0,
-      notes
-    })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-    return res.json();
-  })
-  .then(data => {
-    console.log("✅ Batch saved in backend!", data);
-    alert("✅ Batch created and stored in cloud!");
-    switchSection('incubation');
-  })
-  .catch(err => {
-    console.error("❌ Error saving batch:", err);
-    alert("Something went wrong saving batch to backend.");
+  incubationBatches.forEach(batch => {
+    const div = document.createElement('div');
+    div.className = 'batch-card';
+    div.innerHTML = `
+      <strong>Batch: ${batch.batchLabel}</strong><br>
+      Variety: ${batch.variety}<br>
+      Date: ${batch.inoculationDate}<br>
+      Bags: ${batch.numBags}<br>
+      <label>Contaminated Bags:</label>
+      <input class="inline-input" type="number" value="${batch.contaminatedBags}" onchange="updateContaminated(${batch.id}, this.value)"><br>
+      <label>Notes:</label>
+      <textarea class="inline-input" rows="2" onchange="updateNotes(${batch.id}, this.value)">${batch.notes || ''}</textarea><br>
+      <button class="move-btn" onclick="moveToGrowRoom(${batch.id})">Move to Grow Room</button>
+      <button class="delete-btn" onclick="deleteBatch(${batch.id})">Delete</button>
+    `;
+    list.appendChild(div);
   });
 }
-
-    function renderIncubationRoom() {
-      const list = document.getElementById('incubationList');
-      list.innerHTML = '';
-      fetch("https://mushtrack-backend.onrender.com/api/get-batches/")
-  .then(response => {
-    if (!response.ok) throw new Error("Network response was not OK");
-    return response.json();
-  })
-  .then(batches => {
-    console.log("✅ Batches from backend:", batches);
-    renderBatches(batches);  // You'll call your own rendering function here
-  })
-  .catch(error => {
-    console.error("❌ Failed to fetch batches:", error);
-  });
-
-
-      if (incubationBatches.length === 0) {
-        list.innerHTML = '<p>No batches in incubation.</p>';
-        return;
-      }
-
-      incubationBatches.forEach(batch => {
-        const div = document.createElement('div');
-        div.className = 'batch-card';
-        div.innerHTML = `
-          <strong>Batch: ${batch.batchLabel}</strong><br>
-          Variety: ${batch.variety}<br>
-          Date: ${batch.inoculationDate}<br>
-          Bags: ${batch.numBags}<br>
-          <label>Contaminated Bags:</label>
-          <input class="inline-input" type="number" value="${batch.contaminatedBags}" onchange="updateContaminated(${batch.id}, this.value)"><br>
-          <label>Notes:</label>
-          <textarea class="inline-input" rows="2" onchange="updateNotes(${batch.id}, this.value)">${batch.notes || ''}</textarea><br>
-          <button class="move-btn" onclick="moveToGrowRoom(${batch.id})">Move to Grow Room</button>
-          <button class="delete-btn" onclick="deleteBatch(${batch.id})">Delete</button>
-        `;
-        list.appendChild(div);
-      });
-    }
 
     function updateContaminated(id, value) {
       const batches = JSON.parse(localStorage.getItem("batches") || "[]");
