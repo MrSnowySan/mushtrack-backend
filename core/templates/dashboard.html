@@ -207,6 +207,25 @@
   </div>
 
   <script>
+
+function renderIncubationRoom() {
+  const list = document.getElementById('incubationList');
+  list.innerHTML = '';
+
+  fetch("https://mushtrack-backend.onrender.com/api/get-batches/")
+    .then(response => {
+      if (!response.ok) throw new Error("Network response was not OK");
+      return response.json();
+    })
+    .then(batches => {
+      console.log("✅ Batches from backend:", batches);
+      renderBatches(batches); // <- make sure renderBatches() exists too
+    })
+    .catch(error => {
+      console.error("❌ Failed to fetch batches:", error);
+    });
+}
+
     function switchSection(sectionId) {
       document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
       document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
